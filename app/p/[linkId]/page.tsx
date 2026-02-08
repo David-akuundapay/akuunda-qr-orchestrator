@@ -4,6 +4,7 @@ import { useParams } from "next/navigation";
 import { useState } from "react";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE!;
+console.log("API_BASE =", API_BASE);
 
 export default function QrPaymentPage() {
   const { linkId } = useParams();
