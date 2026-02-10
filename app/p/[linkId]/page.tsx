@@ -183,7 +183,7 @@ export default function QrPaymentPage() {
         {selectedCountry && (
           <div style={{ marginBottom: 20 }}>
             <label style={{ display: "block", marginBottom: 5, fontWeight: 500 }}>
-              Provider *
+              Fournisseur *
             </label>
             <select
               value={selectedProvider}
@@ -197,7 +197,7 @@ export default function QrPaymentPage() {
               }}
               required
             >
-              <option value="">Sélectionnez un provider</option>
+              <option value="">Sélectionnez un fournisseur</option>
               {availableProviders.map(provider => (
                 <option key={provider.name} value={provider.name}>
                   {provider.name}
