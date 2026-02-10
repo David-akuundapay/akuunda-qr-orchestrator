@@ -140,6 +140,15 @@ export default function QrPaymentPage() {
     }
   }
 
+  // Validation du formulaire
+  const isFormDisabled = loading || !selectedCountry || !selectedProvider || !selectedMethod || !amount || !userName;
+  
+  // Étape pour le champ montant selon la devise
+  const getAmountStep = () => {
+    // Les devises CDF, XAF, XOF n'utilisent généralement pas de décimales
+    return ["CDF", "XAF", "XOF"].includes(currency) ? "1" : "0.01";
+  };
+
   return (
     <div style={{ 
       padding: 40,
@@ -243,7 +252,7 @@ export default function QrPaymentPage() {
             </label>
             <input
               type="number"
-              step="0.01"
+              step={getAmountStep()}
               min="0"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
@@ -284,17 +293,17 @@ export default function QrPaymentPage() {
         {/* Bouton de validation */}
         <button
           type="submit"
-          disabled={loading || !selectedCountry || !selectedProvider || !selectedMethod || !amount || !userName}
+          disabled={isFormDisabled}
           style={{
             width: "100%",
             padding: 12,
             fontSize: 16,
             fontWeight: 600,
             color: "#fff",
-            backgroundColor: (loading || !selectedCountry || !selectedProvider || !selectedMethod || !amount || !userName) ? "#ccc" : "#007bff",
+            backgroundColor: isFormDisabled ? "#ccc" : "#007bff",
             border: "none",
             borderRadius: 4,
-            cursor: (loading || !selectedCountry || !selectedProvider || !selectedMethod || !amount || !userName) ? "not-allowed" : "pointer"
+            cursor: isFormDisabled ? "not-allowed" : "pointer"
           }}
         >
           {loading ? "Traitement en cours..." : "Valider le paiement"}
