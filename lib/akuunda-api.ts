@@ -81,10 +81,15 @@ export async function fetchMerchantProfile(merchantId: string): Promise<{
 
     const userData = data.data;
 
+    // Validate that merchant has at least one wallet
+    if (!userData.wallets || userData.wallets.length === 0) {
+      throw new Error("Merchant has no wallets configured");
+    }
+
     // Map API response to YellowCardRecipient
     const recipient: YellowCardRecipient = {
       name: `${userData.firstname} ${userData.lastname}`.trim(),
-      country: userData.wallets[0]?.countryCode || "",
+      country: userData.wallets[0].countryCode,
       phone: userData.mobilePhone,
       address: userData.adresse || "Non spécifié",
       email: userData.email,
@@ -99,8 +104,9 @@ export async function fetchMerchantProfile(merchantId: string): Promise<{
     const userName = userData.mobilePhone;
 
     return { recipient, userName };
-  } catch (error: any) {
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
     console.error("Error fetching merchant profile:", error);
-    throw new Error(`Failed to fetch merchant profile: ${error.message}`);
+    throw new Error(`Failed to fetch merchant profile: ${errorMessage}`);
   }
 }

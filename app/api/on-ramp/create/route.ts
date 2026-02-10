@@ -87,10 +87,11 @@ export async function POST(request: NextRequest) {
           engine: "YELLOWCARD",
           ...yellowcardResponse,
         });
-      } catch (error: any) {
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : "Failed to process YellowCard payment";
         console.error("Error calling YellowCard API:", error);
         return NextResponse.json(
-          { error: error.message || "Failed to process YellowCard payment" },
+          { error: errorMessage },
           { status: 500 }
         );
       }
@@ -164,17 +165,19 @@ export async function POST(request: NextRequest) {
         redirectUrl,
         ...meldResponse,
       });
-    } catch (error: any) {
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Failed to process MELD payment";
       console.error("Error calling MELD API:", error);
       return NextResponse.json(
-        { error: error.message || "Failed to process MELD payment" },
+        { error: errorMessage },
         { status: 500 }
       );
     }
-  } catch (error: any) {
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : "Internal server error";
     console.error("Error creating on-ramp:", error);
     return NextResponse.json(
-      { error: error.message || "Internal server error" },
+      { error: errorMessage },
       { status: 500 }
     );
   }
