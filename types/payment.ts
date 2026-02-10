@@ -45,6 +45,7 @@ export interface CreatePaymentRequest {
   amount: string;
   currency: string;
   userName?: string;
+  name?: string;
   email?: string;
   phone?: string;
 }
