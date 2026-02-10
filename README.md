@@ -180,6 +180,30 @@ The following variables are **no longer needed** as all API calls now go through
 - **Before**: Direct external API calls with separate keys
 - **After**: All calls through internal API with Keycloak auth
 
+## Testing
+
+Pour tester l'application, consultez le guide détaillé : **[TESTING.md](./TESTING.md)**
+
+### Tests rapides
+
+```bash
+# 1. Installer les dépendances
+npm install
+
+# 2. Configurer les credentials Keycloak dans .env.local
+cp .env.example .env.local
+# Éditer .env.local avec vos credentials
+
+# 3. Build
+npm run build
+
+# 4. Démarrer le serveur
+npm run dev
+
+# 5. Tester l'UI
+# Ouvrir http://localhost:3000/pay?merchantId=YOUR_ID&wallet=YOUR_WALLET
+```
+
 ## Development
 
 ### Project Structure
