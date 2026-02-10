@@ -83,7 +83,7 @@ export default function ProviderSelector({
     };
 
     fetchPaymentOptions();
-  }, [countryCode, engine]);
+  }, [countryCode, engine, selectedProvider, onProviderSelect, onChannelSelect]);
 
   if (loading) {
     return (
