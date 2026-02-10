@@ -26,8 +26,24 @@ export async function GET(request: NextRequest) {
   try {
     if (country.engine === "YELLOWCARD") {
       // Fetch real networks and channels from YellowCard API
-      const networks = await getYellowCardNetworks(countryCode);
-      const channels = await getYellowCardChannels(countryCode);
+      const networksResponse = await getYellowCardNetworks(countryCode);
+      const channelsResponse = await getYellowCardChannels(countryCode);
+      
+      // Ensure we have arrays - handle various response formats
+      const networks = Array.isArray(networksResponse) 
+        ? networksResponse 
+        : (networksResponse as any)?.data && Array.isArray((networksResponse as any).data)
+          ? (networksResponse as any).data
+          : [];
+      
+      const channels = Array.isArray(channelsResponse)
+        ? channelsResponse
+        : (channelsResponse as any)?.data && Array.isArray((channelsResponse as any).data)
+          ? (channelsResponse as any).data
+          : [];
+      
+      console.log(`YellowCard networks for ${countryCode}:`, networks.length, 'items');
+      console.log(`YellowCard channels for ${countryCode}:`, channels.length, 'items');
       
       return NextResponse.json({
         engine: "YELLOWCARD",
@@ -43,8 +59,17 @@ export async function GET(request: NextRequest) {
     }
 
     // MELD - Fetch real payment methods from API
-    const paymentMethods = await getMeldPaymentMethods(country.currency);
+    const paymentMethodsResponse = await getMeldPaymentMethods(country.currency);
     const defaults = await getMeldDefaults(countryCode);
+    
+    // Ensure we have an array - handle various response formats
+    const paymentMethods = Array.isArray(paymentMethodsResponse)
+      ? paymentMethodsResponse
+      : (paymentMethodsResponse as any)?.data && Array.isArray((paymentMethodsResponse as any).data)
+        ? (paymentMethodsResponse as any).data
+        : [];
+    
+    console.log(`MELD payment methods for ${country.currency}:`, paymentMethods.length, 'items');
     
     return NextResponse.json({
       engine: "MELD",
