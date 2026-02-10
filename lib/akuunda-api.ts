@@ -91,7 +91,7 @@ export async function fetchMerchantProfile(merchantId: string): Promise<{
       name: `${userData.firstname} ${userData.lastname}`.trim(),
       country: userData.wallets[0].countryCode,
       phone: userData.mobilePhone,
-      address: userData.adresse || "Non spécifié",
+      address: userData.adresse || "Not specified",
       email: userData.email,
       dob: userData.dateNaissance || "",
       idNumber: "",

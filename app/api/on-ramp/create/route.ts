@@ -53,8 +53,18 @@ export async function POST(request: NextRequest) {
 
         // Call the actual YellowCard API
         const yellowcardApiUrl = process.env.YELLOWCARD_API_URL;
+        const yellowcardApiKey = process.env.YELLOWCARD_API_KEY;
+        
         if (!yellowcardApiUrl) {
           console.error("YELLOWCARD_API_URL environment variable is not set");
+          return NextResponse.json(
+            { error: "YellowCard API configuration missing" },
+            { status: 500 }
+          );
+        }
+
+        if (!yellowcardApiKey) {
+          console.error("YELLOWCARD_API_KEY environment variable is not set");
           return NextResponse.json(
             { error: "YellowCard API configuration missing" },
             { status: 500 }
@@ -65,7 +75,7 @@ export async function POST(request: NextRequest) {
           method: "POST",
           headers: { 
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${process.env.YELLOWCARD_API_KEY}`
+            "Authorization": `Bearer ${yellowcardApiKey}`
           },
           body: JSON.stringify(payload),
         });
@@ -120,8 +130,18 @@ export async function POST(request: NextRequest) {
 
       // Call the actual MELD API
       const meldApiUrl = process.env.MELD_API_URL;
+      const meldApiKey = process.env.MELD_API_KEY;
+      
       if (!meldApiUrl) {
         console.error("MELD_API_URL environment variable is not set");
+        return NextResponse.json(
+          { error: "MELD API configuration missing" },
+          { status: 500 }
+        );
+      }
+
+      if (!meldApiKey) {
+        console.error("MELD_API_KEY environment variable is not set");
         return NextResponse.json(
           { error: "MELD API configuration missing" },
           { status: 500 }
@@ -132,7 +152,7 @@ export async function POST(request: NextRequest) {
         method: "POST",
         headers: { 
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${process.env.MELD_API_KEY}`
+          "Authorization": `Bearer ${meldApiKey}`
         },
         body: JSON.stringify(payload),
       });
