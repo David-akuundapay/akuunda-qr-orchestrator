@@ -1,4 +1,5 @@
 import { YellowCardRecipient } from "./yellowcard";
+import { internalGet } from "./internal-api";
 
 interface AkuundaWallet {
   id: string;
@@ -48,32 +49,19 @@ interface AkuundaApiResponse {
 
 /**
  * Fetches merchant profile from Akuunda API
- * @param merchantId - The userId of the merchant
+ * @param merchantId - The username/userId of the merchant
  * @returns Merchant profile mapped to YellowCardRecipient format
  */
 export async function fetchMerchantProfile(merchantId: string): Promise<{
   recipient: YellowCardRecipient;
   userName: string;
 }> {
-  const baseUrl = process.env.AKUUNDA_API_BASE_URL || "https://walletdev.akuunda-pay.io";
-  const apiUrl = `${baseUrl}/api/internal/v1/users/akuunda/getUser`;
-
   try {
-    const response = await fetch(apiUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ username: merchantId }),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`Akuunda API error: ${response.status} - ${errorText}`);
-      throw new Error(`Failed to fetch merchant profile: ${response.status} ${response.statusText}`);
-    }
-
-    const data: AkuundaApiResponse = await response.json();
+    // Use GET method with username as query parameter
+    const data: AkuundaApiResponse = await internalGet<AkuundaApiResponse>(
+      "/api/internal/v1/users/akuunda/getUser",
+      { username: merchantId }
+    );
 
     if (data.status !== "success" || !data.data) {
       throw new Error("Invalid response from Akuunda API");

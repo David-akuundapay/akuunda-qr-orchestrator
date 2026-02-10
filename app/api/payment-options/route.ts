@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { YELLOWCARD_NETWORKS } from "../../../lib/yellowcard";
-import { MELD_PAYMENT_METHODS, MELD_SERVICE_PROVIDERS, getCountryByCode } from "../../../lib/countries";
+import { getCountryByCode } from "../../../lib/countries";
+import { getYellowCardNetworks, getYellowCardChannels } from "../../../lib/yellowcard-api";
+import { getMeldPaymentMethods, getMeldDefaults } from "../../../lib/meld-api";
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
@@ -22,31 +23,46 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  if (country.engine === "YELLOWCARD") {
-    const networks = YELLOWCARD_NETWORKS[countryCode] || [];
+  try {
+    if (country.engine === "YELLOWCARD") {
+      // Fetch real networks and channels from YellowCard API
+      const networks = await getYellowCardNetworks(countryCode);
+      const channels = await getYellowCardChannels(countryCode);
+      
+      return NextResponse.json({
+        engine: "YELLOWCARD",
+        country: country.code,
+        currency: country.currency,
+        channels: channels,
+        paymentMethods: networks.map(n => ({
+          id: n.networkId,
+          label: n.label,
+          type: "mobile_money"
+        }))
+      });
+    }
+
+    // MELD - Fetch real payment methods from API
+    const paymentMethods = await getMeldPaymentMethods(country.currency);
+    const defaults = await getMeldDefaults(countryCode);
+    
     return NextResponse.json({
-      engine: "YELLOWCARD",
+      engine: "MELD",
       country: country.code,
       currency: country.currency,
-      paymentMethods: networks.map(n => ({
-        id: n.networkId,
-        label: n.label,
-        type: "mobile_money"
+      defaults: defaults,
+      paymentMethods: paymentMethods.map(m => ({
+        id: m.id,
+        label: m.label,
+        type: m.type || "card"
       }))
     });
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : "Failed to fetch payment options";
+    console.error("Error fetching payment options:", error);
+    return NextResponse.json(
+      { error: errorMessage },
+      { status: 500 }
+    );
   }
-
-  // MELD
-  const paymentMethods = MELD_PAYMENT_METHODS[countryCode] || [];
-  return NextResponse.json({
-    engine: "MELD",
-    country: country.code,
-    currency: country.currency,
-    providers: MELD_SERVICE_PROVIDERS,
-    paymentMethods: paymentMethods.map(m => ({
-      id: m.id,
-      label: m.label,
-      type: "card"
-    }))
-  });
 }
