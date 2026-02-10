@@ -385,6 +385,22 @@ Avant de considérer que tout fonctionne :
 2. Testez l'endpoint directement: `curl http://localhost:3000/api/yellowcard/networks?countryCode=CI`
 3. Vérifiez que le token Keycloak est valide
 
+### Erreur: "TypeError: e.map is not a function"
+
+**Cause**: L'API retourne un format de données inattendu  
+**Solution**: Cette erreur a été corrigée. Le code gère maintenant plusieurs formats de réponse :
+- Arrays directs : `[{...}, {...}]`
+- Données wrappées : `{ data: [{...}, {...}] }`
+- Formats inattendus : fallback vers `[]`
+
+Si vous voyez encore cette erreur après mise à jour :
+1. Vérifiez vos logs serveur pour voir le format exact retourné par l'API
+2. Vérifiez que vous avez la dernière version du code
+3. Testez l'endpoint directement et regardez la réponse :
+   ```bash
+   curl -v http://localhost:3000/api/payment-options?countryCode=CI
+   ```
+
 ## 12. Tests Automatisés (Optionnel)
 
 Si vous souhaitez créer des tests automatisés :

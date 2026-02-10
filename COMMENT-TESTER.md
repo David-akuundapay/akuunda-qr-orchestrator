@@ -271,6 +271,27 @@ npm run dev
 # Regarder les logs dans le terminal
 ```
 
+### ❌ "TypeError: e.map is not a function"
+
+**Problème** : L'API retourne un format de données inattendu (objet au lieu d'array)
+
+**Solution** : Ce problème a été corrigé dans la dernière version. Le code gère maintenant :
+- Arrays directs : `[{...}, {...}]`
+- Données wrappées : `{ data: [{...}, {...}] }`
+- Formats inattendus : fallback vers array vide `[]`
+
+Si vous voyez encore cette erreur :
+1. Vérifiez que vous avez la dernière version du code
+2. Regardez les logs pour voir combien d'items sont récupérés
+3. Vérifiez le format de réponse de l'API dans les logs
+
+```bash
+# Voir les logs détaillés
+npm run dev
+# Puis testez l'endpoint
+curl "http://localhost:3000/api/payment-options?countryCode=CI"
+```
+
 ## 📊 Checklist Complète
 
 - [ ] `.env.local` créé avec credentials Keycloak
