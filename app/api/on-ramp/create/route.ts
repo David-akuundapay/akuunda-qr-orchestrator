@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { buildYellowCardPayload, YellowCardRecipient, YellowCardSource } from "../../../../lib/yellowcard";
 import { buildMeldPayload } from "../../../../lib/meld";
+import { fetchMerchantProfile } from "../../../../lib/akuunda-api";
 
 interface OnRampRequest {
   merchantId: string;
@@ -12,22 +13,6 @@ interface OnRampRequest {
   source?: YellowCardSource;
   serviceProvider?: string;
 }
-
-// Mock merchant data - in production, this would come from a database
-const MOCK_MERCHANT_PROFILE: Record<string, YellowCardRecipient> = {
-  default: {
-    name: "Kouassi David",
-    country: "CI",
-    phone: "0033612108828",
-    address: "Non spécifié",
-    email: "amandavidk@yahoo.com",
-    dob: "10/30/1997",
-    idNumber: "25AA74989",
-    idType: "passport",
-    additionalIdType: "",
-    additionalIdNumber: "",
-  },
-};
 
 export async function POST(request: NextRequest) {
   try {
@@ -51,40 +36,64 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      // Get merchant profile (in production, fetch from database using merchantId)
-      const merchantProfile = MOCK_MERCHANT_PROFILE[merchantId] || MOCK_MERCHANT_PROFILE.default;
+      try {
+        // Fetch merchant profile from Akuunda API
+        const { recipient: merchantProfile } = await fetchMerchantProfile(merchantId);
 
-      // Build YellowCard payload
-      const channelId = process.env.YELLOWCARD_CHANNEL_ID || "7c7e79fe-a82a-42ab-b35c-248aba8c49b3";
-      const payload = buildYellowCardPayload(
-        merchantProfile,
-        source,
-        amount,
-        currency,
-        countryCode,
-        channelId
-      );
+        // Build YellowCard payload
+        const channelId = process.env.YELLOWCARD_CHANNEL_ID || "7c7e79fe-a82a-42ab-b35c-248aba8c49b3";
+        const payload = buildYellowCardPayload(
+          merchantProfile,
+          source,
+          amount,
+          currency,
+          countryCode,
+          channelId
+        );
 
-      // In production, call the actual YellowCard API
-      // const response = await fetch(YELLOWCARD_API_URL, {
-      //   method: "POST",
-      //   headers: { 
-      //     "Content-Type": "application/json",
-      //     "Authorization": `Bearer ${process.env.YELLOWCARD_API_KEY}`
-      //   },
-      //   body: JSON.stringify(payload),
-      // });
+        // Call the actual YellowCard API
+        const yellowcardApiUrl = process.env.YELLOWCARD_API_URL;
+        if (!yellowcardApiUrl) {
+          console.error("YELLOWCARD_API_URL environment variable is not set");
+          return NextResponse.json(
+            { error: "YellowCard API configuration missing" },
+            { status: 500 }
+          );
+        }
 
-      // Mock response for now
-      console.log("YellowCard payload:", JSON.stringify(payload, null, 2));
+        const response = await fetch(yellowcardApiUrl, {
+          method: "POST",
+          headers: { 
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${process.env.YELLOWCARD_API_KEY}`
+          },
+          body: JSON.stringify(payload),
+        });
 
-      return NextResponse.json({
-        success: true,
-        engine: "YELLOWCARD",
-        transactionId: `YC-${Date.now()}`,
-        status: "pending",
-        message: "Payment initiated successfully",
-      });
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error(`YellowCard API error: ${response.status} - ${errorText}`);
+          return NextResponse.json(
+            { error: `YellowCard API error: ${response.statusText}` },
+            { status: response.status }
+          );
+        }
+
+        const yellowcardResponse = await response.json();
+        console.log("YellowCard response:", JSON.stringify(yellowcardResponse, null, 2));
+
+        return NextResponse.json({
+          success: true,
+          engine: "YELLOWCARD",
+          ...yellowcardResponse,
+        });
+      } catch (error: any) {
+        console.error("Error calling YellowCard API:", error);
+        return NextResponse.json(
+          { error: error.message || "Failed to process YellowCard payment" },
+          { status: 500 }
+        );
+      }
     }
 
     // MELD
@@ -95,41 +104,73 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get merchant profile for userName (in production, fetch from database)
-    const merchantProfile = MOCK_MERCHANT_PROFILE[merchantId] || MOCK_MERCHANT_PROFILE.default;
-    const userName = merchantProfile.phone;
+    try {
+      // Fetch merchant profile from Akuunda API
+      const { userName } = await fetchMerchantProfile(merchantId);
 
-    // Build MELD payload
-    const payload = buildMeldPayload(
-      userName,
-      serviceProvider,
-      currency,
-      amount,
-      countryCode
-    );
+      // Build MELD payload
+      const payload = buildMeldPayload(
+        userName,
+        serviceProvider,
+        currency,
+        amount,
+        countryCode
+      );
 
-    // In production, call the actual MELD API
-    // const response = await fetch(MELD_API_URL, {
-    //   method: "POST",
-    //   headers: { 
-    //     "Content-Type": "application/json",
-    //     "Authorization": `Bearer ${process.env.MELD_API_KEY}`
-    //   },
-    //   body: JSON.stringify(payload),
-    // });
+      // Call the actual MELD API
+      const meldApiUrl = process.env.MELD_API_URL;
+      if (!meldApiUrl) {
+        console.error("MELD_API_URL environment variable is not set");
+        return NextResponse.json(
+          { error: "MELD API configuration missing" },
+          { status: 500 }
+        );
+      }
 
-    // Mock response for now
-    console.log("MELD payload:", JSON.stringify(payload, null, 2));
+      const response = await fetch(meldApiUrl, {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${process.env.MELD_API_KEY}`
+        },
+        body: JSON.stringify(payload),
+      });
 
-    // Mock redirect URL
-    const mockRedirectUrl = `https://meld-widget.example.com/session?id=MELD-${Date.now()}`;
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`MELD API error: ${response.status} - ${errorText}`);
+        return NextResponse.json(
+          { error: `MELD API error: ${response.statusText}` },
+          { status: response.status }
+        );
+      }
 
-    return NextResponse.json({
-      success: true,
-      engine: "MELD",
-      redirectUrl: mockRedirectUrl,
-      sessionId: `MELD-${Date.now()}`,
-    });
+      const meldResponse = await response.json();
+      console.log("MELD response:", JSON.stringify(meldResponse, null, 2));
+
+      // Extract redirect URL from MELD response
+      const redirectUrl = meldResponse.redirectUrl || meldResponse.url;
+      if (!redirectUrl) {
+        console.error("No redirect URL in MELD response:", meldResponse);
+        return NextResponse.json(
+          { error: "Invalid MELD API response: missing redirect URL" },
+          { status: 500 }
+        );
+      }
+
+      return NextResponse.json({
+        success: true,
+        engine: "MELD",
+        redirectUrl,
+        ...meldResponse,
+      });
+    } catch (error: any) {
+      console.error("Error calling MELD API:", error);
+      return NextResponse.json(
+        { error: error.message || "Failed to process MELD payment" },
+        { status: 500 }
+      );
+    }
   } catch (error: any) {
     console.error("Error creating on-ramp:", error);
     return NextResponse.json(
