@@ -1,7 +1,7 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, Suspense, useCallback } from "react";
 import { COUNTRIES, COUNTRY_CONFIG } from "@/config/countries";
 import { PaymentFormData, Provider, PaymentOptionsResponse } from "@/types/payment";
 import styles from "./pay.module.css";
@@ -37,14 +37,7 @@ function PaymentPageContent() {
     }
   }, [merchantId, walletAddress]);
 
-  // Fetch payment options when country is selected
-  useEffect(() => {
-    if (formData.countryCode) {
-      fetchPaymentOptions(formData.countryCode);
-    }
-  }, [formData.countryCode]);
-
-  const fetchPaymentOptions = async (countryCode: string) => {
+  const fetchPaymentOptions = useCallback(async (countryCode: string) => {
     try {
       setLoading(true);
       const response = await fetch(`/api/payment-options?countryCode=${countryCode}`);
@@ -59,7 +52,14 @@ function PaymentPageContent() {
       setError(err.message);
       setLoading(false);
     }
-  };
+  }, []);
+
+  // Fetch payment options when country is selected
+  useEffect(() => {
+    if (formData.countryCode) {
+      fetchPaymentOptions(formData.countryCode);
+    }
+  }, [formData.countryCode, fetchPaymentOptions]);
 
   const handleCountrySelect = (countryCode: string) => {
     const config = COUNTRY_CONFIG[countryCode];
