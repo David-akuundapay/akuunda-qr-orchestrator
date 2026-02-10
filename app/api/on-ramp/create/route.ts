@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { buildYellowCardPayload, YellowCardRecipient, YellowCardSource } from "../../../../lib/yellowcard";
 import { buildMeldPayload } from "../../../../lib/meld";
 import { fetchMerchantProfile } from "../../../../lib/akuunda-api";
+import { createYellowCardCollection } from "../../../../lib/yellowcard-api";
+import { createMeldSession } from "../../../../lib/meld-api";
 
 interface OnRampRequest {
   merchantId: string;
@@ -12,13 +14,14 @@ interface OnRampRequest {
   currency: string;
   source?: YellowCardSource;
   serviceProvider?: string;
+  channelId?: string;
 }
 
 export async function POST(request: NextRequest) {
   try {
     const body: OnRampRequest = await request.json();
 
-    const { merchantId, walletAddress, countryCode, engine, amount, currency, source, serviceProvider } = body;
+    const { merchantId, walletAddress, countryCode, engine, amount, currency, source, serviceProvider, channelId } = body;
 
     // Validation
     if (!merchantId || !walletAddress || !countryCode || !engine || !amount || !currency) {
@@ -36,12 +39,18 @@ export async function POST(request: NextRequest) {
         );
       }
 
+      if (!channelId) {
+        return NextResponse.json(
+          { error: "Missing channelId for YellowCard" },
+          { status: 400 }
+        );
+      }
+
       try {
-        // Fetch merchant profile from Akuunda API
+        // Fetch merchant profile from Akuunda API (now uses authenticated GET)
         const { recipient: merchantProfile } = await fetchMerchantProfile(merchantId);
 
         // Build YellowCard payload
-        const channelId = process.env.YELLOWCARD_CHANNEL_ID || "7c7e79fe-a82a-42ab-b35c-248aba8c49b3";
         const payload = buildYellowCardPayload(
           merchantProfile,
           source,
@@ -51,45 +60,8 @@ export async function POST(request: NextRequest) {
           channelId
         );
 
-        // Call the actual YellowCard API
-        const yellowcardApiUrl = process.env.YELLOWCARD_API_URL;
-        const yellowcardApiKey = process.env.YELLOWCARD_API_KEY;
-        
-        if (!yellowcardApiUrl) {
-          console.error("YELLOWCARD_API_URL environment variable is not set");
-          return NextResponse.json(
-            { error: "YellowCard API configuration missing" },
-            { status: 500 }
-          );
-        }
-
-        if (!yellowcardApiKey) {
-          console.error("YELLOWCARD_API_KEY environment variable is not set");
-          return NextResponse.json(
-            { error: "YellowCard API configuration missing" },
-            { status: 500 }
-          );
-        }
-
-        const response = await fetch(yellowcardApiUrl, {
-          method: "POST",
-          headers: { 
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${yellowcardApiKey}`
-          },
-          body: JSON.stringify(payload),
-        });
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error(`YellowCard API error: ${response.status} - ${errorText}`);
-          return NextResponse.json(
-            { error: `YellowCard API error: ${response.statusText}` },
-            { status: response.status }
-          );
-        }
-
-        const yellowcardResponse = await response.json();
+        // Call internal YellowCard API endpoint (authenticated via Keycloak)
+        const yellowcardResponse = await createYellowCardCollection(payload);
         console.log("YellowCard response:", JSON.stringify(yellowcardResponse, null, 2));
 
         return NextResponse.json({
@@ -116,7 +88,7 @@ export async function POST(request: NextRequest) {
     }
 
     try {
-      // Fetch merchant profile from Akuunda API
+      // Fetch merchant profile from Akuunda API (now uses authenticated GET)
       const { userName } = await fetchMerchantProfile(merchantId);
 
       // Build MELD payload
@@ -128,45 +100,8 @@ export async function POST(request: NextRequest) {
         countryCode
       );
 
-      // Call the actual MELD API
-      const meldApiUrl = process.env.MELD_API_URL;
-      const meldApiKey = process.env.MELD_API_KEY;
-      
-      if (!meldApiUrl) {
-        console.error("MELD_API_URL environment variable is not set");
-        return NextResponse.json(
-          { error: "MELD API configuration missing" },
-          { status: 500 }
-        );
-      }
-
-      if (!meldApiKey) {
-        console.error("MELD_API_KEY environment variable is not set");
-        return NextResponse.json(
-          { error: "MELD API configuration missing" },
-          { status: 500 }
-        );
-      }
-
-      const response = await fetch(meldApiUrl, {
-        method: "POST",
-        headers: { 
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${meldApiKey}`
-        },
-        body: JSON.stringify(payload),
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error(`MELD API error: ${response.status} - ${errorText}`);
-        return NextResponse.json(
-          { error: `MELD API error: ${response.statusText}` },
-          { status: response.status }
-        );
-      }
-
-      const meldResponse = await response.json();
+      // Call internal MELD API endpoint (authenticated via Keycloak)
+      const meldResponse = await createMeldSession(payload);
       console.log("MELD response:", JSON.stringify(meldResponse, null, 2));
 
       // Extract redirect URL from MELD response

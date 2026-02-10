@@ -19,6 +19,7 @@ function PaymentPageContent() {
   const [selectedProvider, setSelectedProvider] = useState<string | null>(null);
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string | null>(null);
   const [selectedNetworkId, setSelectedNetworkId] = useState<string | null>(null);
+  const [selectedChannelId, setSelectedChannelId] = useState<string | null>(null);
   const [amount, setAmount] = useState("");
   const [accountName, setAccountName] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
@@ -33,6 +34,7 @@ function PaymentPageContent() {
     setSelectedProvider(null);
     setSelectedPaymentMethod(null);
     setSelectedNetworkId(null);
+    setSelectedChannelId(null);
   };
 
   const handleNext = () => {
@@ -104,6 +106,7 @@ function PaymentPageContent() {
           accountName: accountName,
           phoneNumber: phoneNumber,
         };
+        payload.channelId = selectedChannelId;
       } else {
         payload.serviceProvider = selectedProvider;
       }
@@ -177,6 +180,7 @@ function PaymentPageContent() {
               setSelectedPaymentMethod(method);
               if (networkId) setSelectedNetworkId(networkId);
             }}
+            onChannelSelect={setSelectedChannelId}
           />
         )}
 
