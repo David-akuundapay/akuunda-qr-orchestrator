@@ -3,6 +3,7 @@ export interface YellowCardNetwork {
   label: string;
 }
 
+// TODO: Replace with actual networkId from YellowCard API
 export const YELLOWCARD_NETWORKS: Record<string, YellowCardNetwork[]> = {
   CI: [
     { networkId: "401a79b8-50bd-41fc-9102-b5d4650a02aa", label: "MTN Mobile Money" },
