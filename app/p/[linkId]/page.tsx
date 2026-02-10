@@ -6,6 +6,12 @@ import { useState, useEffect } from "react";
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE!;
 console.log("API_BASE =", API_BASE);
 
+// Types
+interface PaymentProvider {
+  name: string;
+  methods: string[];
+}
+
 // Configuration des pays, providers et moyens de paiement
 const COUNTRIES = [
   { code: "FR", name: "France", currency: "EUR" },
@@ -15,7 +21,7 @@ const COUNTRIES = [
   { code: "CI", name: "Côte d'Ivoire", currency: "XOF" },
 ];
 
-const PROVIDERS_BY_COUNTRY: Record<string, Array<{ name: string; methods: string[] }>> = {
+const PROVIDERS_BY_COUNTRY: Record<string, PaymentProvider[]> = {
   FR: [
     { name: "MELD", methods: ["Carte bancaire", "Virement SEPA"] },
     { name: "Stripe", methods: ["Carte bancaire", "Apple Pay", "Google Pay"] },
@@ -49,7 +55,7 @@ export default function QrPaymentPage() {
   const [currency, setCurrency] = useState("");
   
   // Providers et méthodes disponibles selon le pays sélectionné
-  const [availableProviders, setAvailableProviders] = useState<Array<{ name: string; methods: string[] }>>([]);
+  const [availableProviders, setAvailableProviders] = useState<PaymentProvider[]>([]);
   const [availableMethods, setAvailableMethods] = useState<string[]>([]);
 
   // Mettre à jour les providers quand le pays change
@@ -88,7 +94,7 @@ export default function QrPaymentPage() {
       return;
     }
     if (!selectedProvider) {
-      setError("Veuillez sélectionner un provider");
+      setError("Veuillez sélectionner un fournisseur");
       return;
     }
     if (!selectedMethod) {
@@ -285,10 +291,10 @@ export default function QrPaymentPage() {
             fontSize: 16,
             fontWeight: 600,
             color: "#fff",
-            backgroundColor: loading || !selectedCountry ? "#ccc" : "#007bff",
+            backgroundColor: (loading || !selectedCountry || !selectedProvider || !selectedMethod || !amount || !userName) ? "#ccc" : "#007bff",
             border: "none",
             borderRadius: 4,
-            cursor: loading || !selectedCountry ? "not-allowed" : "pointer"
+            cursor: (loading || !selectedCountry || !selectedProvider || !selectedMethod || !amount || !userName) ? "not-allowed" : "pointer"
           }}
         >
           {loading ? "Traitement en cours..." : "Valider le paiement"}
